@@ -9,9 +9,8 @@ on:
 
 jobs:
   handle-bug:
-    # Only run if @claude is mentioned or it's a workflow_dispatch event
+    # Only run if @claude is mentioned
     if: |
-      github.event_name == 'workflow_dispatch' ||
       contains(github.event.comment.body, '@claude') ||
       contains(github.event.issue.body, '@claude')
     
