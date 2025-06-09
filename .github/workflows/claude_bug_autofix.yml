@@ -1,6 +1,11 @@
 name: Claude Bug AutoFix
 
 on:
+  # Listen for @claude mentions in issues
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
   # Add manual trigger for testing
   workflow_dispatch:
     inputs:
@@ -11,6 +16,12 @@ on:
 
 jobs:
   handle-bug:
+    # Only run if @claude is mentioned or it's a workflow_dispatch event
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.comment.body, '@claude') ||
+      contains(github.event.issue.body, '@claude')
+    
     runs-on: ubuntu-latest
     permissions:
       contents: write
