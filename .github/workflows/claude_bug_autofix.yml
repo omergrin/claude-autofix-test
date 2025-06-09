@@ -6,13 +6,6 @@ on:
     types: [opened]
   issue_comment:
     types: [created]
-  # Add manual trigger for testing
-  workflow_dispatch:
-    inputs:
-      prompt:
-        description: 'Bug description or prompt for Claude'
-        required: true
-        type: string
 
 jobs:
   handle-bug:
@@ -30,50 +23,11 @@ jobs:
       actions: read
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
       - name: Use Claude to Fix Bug
-        uses: rjwalters/claude-code-action@feature/manual-trigger-support
+        uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Use prompt from manual trigger
-          direct_prompt: ${{ inputs.prompt }}
-          # Optional: customize timeout
-          timeout_minutes: 30
           # Optional: specify allowed tools
           allowed_tools: "Bash(npm:*),Bash(git:*),View,Edit,Replace,GlobTool,GrepTool"
           # Optional: add custom instructions
-
-
-      - name: Add success label (if this was triggered by an issue)
-        if: success() && github.event.issue.number
-        run: |
-          gh issue edit ${{ github.event.issue.number }} --add-label "claude-fixed"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Add failure label (if this was triggered by an issue)
-        if: failure() && github.event.issue.number
-        run: |
-          gh issue edit ${{ github.event.issue.number }} --add-label "claude-failed"
-          gh issue comment ${{ github.event.issue.number }} --body "❌ Claude failed to process this bug report. Manual intervention required."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Optional: Send notification
-      - name: Send notification
-        if: always()
-        run: |
-          echo "🔔 Notification: Bug fix process completed"
-          echo "Status: ${{ job.status }}"
-          echo "Triggered by: ${{ github.event_name }}"
-          # Add your notification logic here:
-          # - Slack webhook
-          # - Microsoft Teams webhook  
-          # - Discord webhook
-          # - Email notification 
