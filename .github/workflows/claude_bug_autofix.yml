@@ -47,14 +47,7 @@ jobs:
           # Optional: specify allowed tools
           allowed_tools: "Bash(npm:*),Bash(git:*),View,Edit,Replace,GlobTool,GrepTool"
           # Optional: add custom instructions
-          custom_instructions: |
-            You are fixing a bug reported from production. Please:
-            1. Analyze the bug description carefully
-            2. Identify the root cause
-            3. Implement a proper fix
-            4. Add tests if appropriate
-            5. Create a clear commit message explaining the fix
-            6. The fix should be production-ready and follow best practices
+
 
       - name: Add success label (if this was triggered by an issue)
         if: success() && github.event.issue.number
