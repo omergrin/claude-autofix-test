@@ -1,0 +1,95 @@
+name: Claude Bug AutoFix
+
+on:
+  repository_dispatch:
+    types: [bug_from_production]
+  # Add manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Bug description or prompt for Claude'
+        required: true
+        type: string
+
+jobs:
+  handle-bug:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js (if needed)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        # Only run if package.json exists
+        if: hashFiles('**/package.json') != ''
+
+      - name: Install Dependencies (if needed)
+        run: |
+          if [ -f "package.json" ]; then
+            npm install
+          elif [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          elif [ -f "Gemfile" ]; then
+            bundle install
+          fi
+        # Add other package managers as needed
+
+      - name: Use Claude to Fix Bug
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Use prompt from either repository_dispatch or manual trigger
+          direct_prompt: ${{ github.event.client_payload.prompt || inputs.prompt }}
+          # Optional: customize timeout
+          timeout_minutes: 30
+          # Optional: specify allowed tools
+          allowed_tools: "Bash(npm:*),Bash(git:*),View,Edit,Replace,GlobTool,GrepTool"
+          # Optional: add custom instructions
+          custom_instructions: |
+            You are fixing a bug reported from production. Please:
+            1. Analyze the bug description carefully
+            2. Identify the root cause
+            3. Implement a proper fix
+            4. Add tests if appropriate
+            5. Create a clear commit message explaining the fix
+            6. The fix should be production-ready and follow best practices
+
+      - name: Add success label (if this was triggered by an issue)
+        if: success() && github.event.issue.number
+        run: |
+          gh issue edit ${{ github.event.issue.number }} --add-label "claude-fixed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Add failure label (if this was triggered by an issue)
+        if: failure() && github.event.issue.number
+        run: |
+          gh issue edit ${{ github.event.issue.number }} --add-label "claude-failed"
+          gh issue comment ${{ github.event.issue.number }} --body "❌ Claude failed to process this bug report. Manual intervention required."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: Send notification
+      - name: Send notification
+        if: always()
+        run: |
+          echo "🔔 Notification: Bug fix process completed"
+          echo "Status: ${{ job.status }}"
+          echo "Triggered by: ${{ github.event_name }}"
+          # Add your notification logic here:
+          # - Slack webhook
+          # - Microsoft Teams webhook  
+          # - Discord webhook
+          # - Email notification 
