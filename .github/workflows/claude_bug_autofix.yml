@@ -1,8 +1,6 @@
 name: Claude Bug AutoFix
 
 on:
-  repository_dispatch:
-    types: [bug_from_production]
   # Add manual trigger for testing
   workflow_dispatch:
     inputs:
@@ -49,8 +47,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Use prompt from either repository_dispatch or manual trigger
-          direct_prompt: ${{ github.event.client_payload.prompt || inputs.prompt }}
+          # Use prompt from manual trigger
+          direct_prompt: ${{ inputs.prompt }}
           # Optional: customize timeout
           timeout_minutes: 30
           # Optional: specify allowed tools
