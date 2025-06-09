@@ -1,29 +1,18 @@
 name: Claude Bug AutoFix
 
 on:
-  # Listen for @claude mentions in issues and PRs
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  issues:
-    types: [opened]
-  # Manual workflow trigger for testing
+  repository_dispatch:
+    types: [bug_from_production]
+  # Add manual trigger for testing
   workflow_dispatch:
     inputs:
-      bug_description:
-        description: 'Bug description to fix'
+      prompt:
+        description: 'Bug description or prompt for Claude'
         required: true
         type: string
 
 jobs:
   handle-bug:
-    # Only run if @claude is mentioned or it's a workflow_dispatch event
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      contains(github.event.comment.body, '@claude') ||
-      contains(github.event.issue.body, '@claude')
-    
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -41,6 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
         # Only run if package.json exists
         if: hashFiles('**/package.json') != ''
 
@@ -56,13 +46,12 @@ jobs:
         # Add other package managers as needed
 
       - name: Use Claude to Fix Bug
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@rjwalters:feature/manual-trigger-support
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # For workflow_dispatch events, use the input prompt
-          # For comment events, Claude will automatically respond to @claude mentions
-          direct_prompt: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.bug_description || '' }}
+          # Use prompt from either repository_dispatch or manual trigger
+          direct_prompt: ${{ github.event.client_payload.prompt || inputs.prompt }}
           # Optional: customize timeout
           timeout_minutes: 30
           # Optional: specify allowed tools
