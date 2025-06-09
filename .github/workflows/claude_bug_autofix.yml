@@ -8,15 +8,19 @@ on:
     types: [created]
   issues:
     types: [opened]
-  # Repository dispatch for automated triggers
-  repository_dispatch:
-    types: [bug_from_production]
+  # Manual workflow trigger for testing
+  workflow_dispatch:
+    inputs:
+      bug_description:
+        description: 'Bug description to fix'
+        required: true
+        type: string
 
 jobs:
   handle-bug:
-    # Only run if @claude is mentioned or it's a repository_dispatch event
+    # Only run if @claude is mentioned or it's a workflow_dispatch event
     if: |
-      github.event_name == 'repository_dispatch' ||
+      github.event_name == 'workflow_dispatch' ||
       contains(github.event.comment.body, '@claude') ||
       contains(github.event.issue.body, '@claude')
     
@@ -56,9 +60,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # For repository_dispatch events, use the payload prompt
+          # For workflow_dispatch events, use the input prompt
           # For comment events, Claude will automatically respond to @claude mentions
-          direct_prompt: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.prompt || '' }}
+          direct_prompt: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.bug_description || '' }}
           # Optional: customize timeout
           timeout_minutes: 30
           # Optional: specify allowed tools
