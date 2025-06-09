@@ -17,3 +17,20 @@ jobs:
       - uses: rjwalters/claude-code-action@feature/manual-trigger-support
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Use prompt from manual trigger
+          direct_prompt: ${{ inputs.prompt }}
+          # Optional: customize timeout
+          timeout_minutes: 30
+          # Optional: specify allowed tools
+          allowed_tools: "Bash(npm:*),Bash(git:*),View,Edit,Replace,GlobTool,GrepTool"
+          # Optional: add custom instructions
+          custom_instructions: |
+            You are fixing a bug reported from production. Please:
+            1. Analyze the bug description carefully
+            2. Identify the root cause
+            3. Implement a proper fix
+            4. Add tests if appropriate
+            5. Create a clear commit message explaining the fix
+            6. The fix should be production-ready and follow best practices
+
