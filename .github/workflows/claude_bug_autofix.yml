@@ -46,7 +46,7 @@ jobs:
         # Add other package managers as needed
 
       - name: Use Claude to Fix Bug
-        uses: anthropics/claude-code-action@rjwalters:feature/manual-trigger-support
+        uses: rjwalters/claude-code-action@feature/manual-trigger-support
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
