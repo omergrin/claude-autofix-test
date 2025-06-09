@@ -10,11 +10,22 @@ on:
         type: string
 
 jobs:
-  review:
+  handle-bug:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: rjwalters/claude-code-action@feature/manual-trigger-support
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Use Claude to Fix Bug
+        uses: rjwalters/claude-code-action@feature/manual-trigger-support
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,3 +45,30 @@ jobs:
             5. Create a clear commit message explaining the fix
             6. The fix should be production-ready and follow best practices
 
+      - name: Add success label (if this was triggered by an issue)
+        if: success() && github.event.issue.number
+        run: |
+          gh issue edit ${{ github.event.issue.number }} --add-label "claude-fixed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Add failure label (if this was triggered by an issue)
+        if: failure() && github.event.issue.number
+        run: |
+          gh issue edit ${{ github.event.issue.number }} --add-label "claude-failed"
+          gh issue comment ${{ github.event.issue.number }} --body "❌ Claude failed to process this bug report. Manual intervention required."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: Send notification
+      - name: Send notification
+        if: always()
+        run: |
+          echo "🔔 Notification: Bug fix process completed"
+          echo "Status: ${{ job.status }}"
+          echo "Triggered by: ${{ github.event_name }}"
+          # Add your notification logic here:
+          # - Slack webhook
+          # - Microsoft Teams webhook  
+          # - Discord webhook
+          # - Email notification 
