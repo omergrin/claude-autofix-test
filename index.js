@@ -18,17 +18,31 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the test API' });
 });
 
-// BUG 1: Missing error handling and potential undefined access
+// Fixed: Added proper error handling for non-existent users
 app.get('/users/:id', (req, res) => {
   const userId = parseInt(req.params.id);
+  
+  // Handle invalid ID parameter
+  if (isNaN(userId)) {
+    return res.status(400).json({ 
+      error: 'Invalid user ID. Please provide a valid number.' 
+    });
+  }
+  
   const user = users.find(u => u.id === userId);
   
-  // This will throw an error if user is undefined
+  // Check if user exists before accessing properties
+  if (!user) {
+    return res.status(404).json({ 
+      error: 'User not found' 
+    });
+  }
+  
   res.json({
     id: user.id,
     name: user.name,
     email: user.email,
-    nameLength: user.name.length  // BUG: Will crash if user is undefined
+    nameLength: user.name.length
   });
 });
 
